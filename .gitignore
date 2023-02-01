@@ -38,3 +38,8 @@ Cargo.lock
 
 # End of https://www.toptal.com/developers/gitignore/api/rust,visualstudiocode
 
+
+
+# Added by cargo
+
+/target
