@@ -1,46 +1,29 @@
-# SPDX-FileCopyrightText: 2021 Serokell <https://serokell.io/>
-#
-# SPDX-License-Identifier: CC0-1.0
-
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs";
-    crate2nix = {
-      url = "github:kolloch/crate2nix";
-      flake = false;
-    };
-    flake-utils.url = "github:numtide/flake-utils";
+    cargo2nix.url = "github:cargo2nix/cargo2nix/release-0.11.0";
+    flake-utils.follows = "cargo2nix/flake-utils";
+    nixpkgs.follows = "cargo2nix/nixpkgs";
   };
 
-  outputs = { self, nixpkgs, crate2nix, flake-utils }:
+  outputs = inputs: with inputs;
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
-
-        # DON'T FORGET TO PUT YOUR PACKAGE NAME HERE, REMOVING `throw`
-        crateName = "testability-linter";
-
-        inherit (import "${crate2nix}/tools.nix" { inherit pkgs; })
-          generatedCargoNix;
-
-        project = import (generatedCargoNix {
-          name = crateName;
-          src = ./.;
-        }) {
-          inherit pkgs;
-          defaultCrateOverrides = pkgs.defaultCrateOverrides // {
-            # Crate dependency overrides go here
-          };
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [cargo2nix.overlays.default];
         };
 
-      in {
-        packages.${crateName} = project.rootCrate.build;
-
-        defaultPackage = self.packages.${system}.${crateName};
-
-        devShell = pkgs.mkShell {
-          inputsFrom = builtins.attrValues self.packages.${system};
-          buildInputs = [ pkgs.cargo pkgs.rust-analyzer pkgs.clippy ];
+        rustPkgs = pkgs.rustBuilder.makePackageSet {
+          rustVersion = "1.61.0";
+          packageFun = import ./Cargo.nix;
         };
-      });
+
+      in rec {
+        packages = {
+          # replace hello-world with your package name
+          testability-linter = (rustPkgs.workspace.testability-linter {}).bin;
+          default = packages.testability-linter;
+        };
+      }
+    );
 }
