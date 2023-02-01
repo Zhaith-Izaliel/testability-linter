@@ -1,12 +1,12 @@
-let
-  rustVersion = "1.61.0";
-  cargo2nixVersion = "release-0.11.0";
-in
 {
   inputs = {
-    cargo2nix.url = "github:cargo2nix/cargo2nix/${cargo2nixVersion}";
+    cargo2nix.url = "github:cargo2nix/cargo2nix/release-0.11.0";
     flake-utils.follows = "cargo2nix/flake-utils";
     nixpkgs.follows = "cargo2nix/nixpkgs";
+    flake-compat = {
+      url = "github:edolstra/flake-compat";
+      flake = false;
+    };
   };
 
   outputs = inputs: with inputs;
@@ -18,7 +18,7 @@ in
         };
 
         rustPkgs = pkgs.rustBuilder.makePackageSet {
-          rustVersion = "${rustVersion}";
+          rustVersion = "1.61.0";
           packageFun = import ./Cargo.nix;
         };
 
