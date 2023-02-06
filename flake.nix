@@ -61,8 +61,7 @@
           packageFun = import ./Cargo.nix;
         };
 
-        cargo2nixBin = cargo2nix.packages.x86_64-linux.cargo2nix;
-
+        cargo2nixBin = cargo2nix.packages."${system}".cargo2nix;
 
         workspaceShell = (rustPkgs.workspaceShell {
           packages = [
