@@ -67,6 +67,7 @@
           packages = [
             pkgs.rust-analyzer
             cargo2nixBin
+            pkgs.jdk
           ];
           # shellHook = ''
           #   export PS1="\033[0;31m☠dev-shell☠ $ \033[0m"
