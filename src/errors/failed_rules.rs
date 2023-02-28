@@ -1,4 +1,5 @@
 use crate::enums::rules_enum::*;
+use colored::Colorize;
 use super::generic::GenericErrorKind;
 use std::fmt;
 
@@ -37,8 +38,8 @@ impl FailedRule {
     }
 
     pub fn to_string(&self) -> String {
-        let string = format!("[file: {}],", self.file());
-        match self.kind {
+        let string = format!("FAIL: [file: {}],", self.file());
+        let string = match self.kind {
             GenericErrorKind::RuleCheckFailed => {
                 let string = format!("{} rule: {},", string, self.rule());
                 match self.rule {
@@ -46,7 +47,8 @@ impl FailedRule {
                 }
             }
             _ => format!("{} error: {}, trace: {}", string, self.kind(), self.message()),
-        }
+        };
+        format!("{}", string.red())
     }
 }
 
