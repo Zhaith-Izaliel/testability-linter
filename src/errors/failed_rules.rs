@@ -38,8 +38,9 @@ impl FailedRule {
     }
 
     pub fn to_string(&self) -> String {
-        let string = format!("FAIL: [file: {}],", self.file());
-        let string = match self.kind {
+        let fail = format!("{}", "FAIL:".red().bold());
+        let string = format!("{} [file: {}],", fail, self.file());
+        match self.kind {
             GenericErrorKind::RuleCheckFailed => {
                 let string = format!("{} rule: {},", string, self.rule());
                 match self.rule {
@@ -47,8 +48,7 @@ impl FailedRule {
                 }
             }
             _ => format!("{} error: {}, trace: {}", string, self.kind(), self.message()),
-        };
-        format!("{}", string.red())
+        }
     }
 }
 
