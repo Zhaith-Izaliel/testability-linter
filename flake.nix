@@ -81,7 +81,6 @@
         default = workspaceShell;
       };
       packages = {
-        # IMPORTANT Replace "hello-world" with your package name
         testability-linter = (rustPkgs.workspace.testability-linter {}).bin;
         default = packages.testability-linter;
         shell = devShells.default;
