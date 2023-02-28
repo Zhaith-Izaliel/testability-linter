@@ -39,11 +39,12 @@ impl FailedRule {
 
     pub fn to_string(&self) -> String {
         let fail = format!("{}", "FAIL:".red().bold());
-        let string = format!("{} [file: {}],", fail, self.file());
+        let file = format!("{}", format!("[file: {}]", self.file()).yellow());
+        let string = format!("{} {},", fail, file);
         match self.kind {
             GenericErrorKind::RuleCheckFailed => {
-                let string = format!("{} rule: {},", string, self.rule());
-                match self.rule {
+                let string = format!("{} Rule: {},", string, self.rule().to_string().purple());
+                match self.rule() {
                     Rules::CheckNoVoid => format!("{} trace: (method: {}) - {}", string, self.method(), self.message()),
                 }
             }

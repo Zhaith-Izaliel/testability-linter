@@ -24,7 +24,8 @@ impl PassedRule {
 
     pub fn to_string(&self) -> String {
         let ok = format!("{}", "OK:".green().bold());
-        let string = format!("{} [file: {}], rule: {}", ok, self.file(), self.rule());
+        let file = format!("{}", format!("[file: {}]", self.file()).yellow());
+        let string = format!("{} {}, Rule: {}", ok, file, self.rule().to_string().purple());
         format!("{}", string)
     }
 }
