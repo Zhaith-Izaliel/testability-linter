@@ -3,8 +3,6 @@ use classfile_parser::{
     types::ClassFile,
     constant_info::{ConstantInfo, Utf8Constant},
 };
-use std::path::Path;
-
 use crate::{
     errors::{
         generic::*, failed_rules::FailedRule
@@ -12,11 +10,12 @@ use crate::{
     types::passed_rules::PassedRule, enums::rules_enum::Rules
 };
 
+use crate::utils::path::*;
+
 /* --------------------------------- Public --------------------------------- */
 
-pub fn parse_file(path: &Path) -> Result<ClassFile, IError> {
-    let string_path = path.to_str().unwrap();
-    match parse_class(string_path) {
+pub fn parse_file(path: &String) -> Result<ClassFile, IError> {
+    match parse_class(parse_path_as_absolute(path)?.as_str()) {
         Ok(class_file) => Ok(class_file),
         Err(e) => Err(IError::new(GenericErrorKind::ParseError, e)),
     }

@@ -16,9 +16,8 @@ public class Example {
         return 1;
     }
 
-    public int test() {
+    public void test() {
         System.out.println("Hello World!");
-        return 1;
     }
 
     public int test2() {
