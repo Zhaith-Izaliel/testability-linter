@@ -1,1 +1,1 @@
-pub mod passed_rules;
+pub mod rule;

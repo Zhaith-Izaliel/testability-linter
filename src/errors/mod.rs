@@ -1,2 +1,2 @@
 pub mod generic;
-pub mod failed_rules;
+pub mod fail;
