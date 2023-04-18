@@ -6,6 +6,8 @@ pub enum GenericErrorKind {
     NotFound,
     InvalidFormat,
     RuleCheckFailed,
+    InvalidPath,
+    Other,
 }
 
 impl fmt::Display for GenericErrorKind {
@@ -14,7 +16,9 @@ impl fmt::Display for GenericErrorKind {
             GenericErrorKind::ParseError => write!(f, "Parser Error"),
             GenericErrorKind::NotFound => write!(f, "Not Found"),
             GenericErrorKind::InvalidFormat => write!(f, "Invalid Format"),
+            GenericErrorKind::InvalidPath => write!(f, "Invalid Path"),
             GenericErrorKind::RuleCheckFailed => write!(f, "Rule Check Failed"),
+            GenericErrorKind::Other => write!(f, "Other"),
         }
     }
 }

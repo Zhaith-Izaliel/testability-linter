@@ -3,17 +3,14 @@ mod types;
 mod rules;
 mod enums;
 mod utils;
+mod cli;
 
-use rules::java::java_rules::{
-    parse_file,
-    check_void
-};
-use std::path::Path;
-use utils::print::*;
+use std::env;
+use cli::cli::*;
+
+
 
 fn main() {
-    let path = Path::new("/home/zhaith/Development/Studies/research-ensimag/testability-linter/example/Example");
-    let class_file = parse_file(path).unwrap();
-    let result = check_void(class_file, path.to_str().unwrap());
-    print_lint(result);
+    let args: Vec<String> = env::args().collect();
+    lint_files(args[1..].to_vec());
 }

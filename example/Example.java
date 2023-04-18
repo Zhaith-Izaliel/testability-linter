@@ -6,9 +6,8 @@ public class Example {
         value = 0;
     }
 
-    public static int test3(int ah, int bh, int ch) {
+    public void test3(int ah, int bh, int ch) {
         System.out.println(new Example().value);
-        return 1;
     }
 
     public static int main(String[] args) {
@@ -16,12 +15,10 @@ public class Example {
         return 1;
     }
 
-    public int test() {
+    public void test() {
         System.out.println("Hello World!");
-        return 1;
     }
 
-    public int test2() {
-        return 1;
+    public void test2() {
     }
 }

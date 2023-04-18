@@ -51,5 +51,3 @@ flake.lock
 
 # Nix build
 result-bin
-
-*.class
