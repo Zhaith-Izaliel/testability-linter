@@ -1,9 +1,9 @@
 use classfile_parser::ClassFile;
 
-use crate::{rules::java::java_rules::{
+use crate::rules::java::java_rules::{
     parse_file,
     check_void
-}};
+};
 
 pub fn lint_files(files: Vec<String>) {
     let class_files: Vec<(ClassFile, &String)> = files.iter().filter_map(|file| {
@@ -18,3 +18,4 @@ pub fn lint_files(files: Vec<String>) {
         println!("{}", result);
     });
 }
+
