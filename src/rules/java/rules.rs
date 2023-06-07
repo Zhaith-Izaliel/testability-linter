@@ -1,4 +1,7 @@
 use classfile_parser::types::ClassFile;
+use lazy_static::lazy_static;
+use regex::Regex;
+
 use crate::{
     errors::{
         generic::*, fail::Fail
@@ -9,9 +12,7 @@ use crate::{
 
 use super::utils::*;
 
-/* --------------------------------- Public --------------------------------- */
-
-pub fn check_void(class_file: ClassFile, file: &str) -> RuleResult {
+pub fn no_binary_in_names(class_file: ClassFile, file: &str) -> RuleResult {
     let const_pool = &class_file.const_pool;
 
     let errors: Vec<Fail> = class_file.methods
@@ -24,37 +25,31 @@ pub fn check_void(class_file: ClassFile, file: &str) -> RuleResult {
                 )
             };
 
-            let descriptor = match extract_utf8_constant(const_pool, method.descriptor_index) {
-                Ok(descriptor) => descriptor,
-                Err(e) => return Some(
-                    Fail::new(String::from("N/A"), e.message().clone(), e.kind())
-                )
-            };
-
-            if name.utf8_string == "<init>" || name.utf8_string == "<clinit>"|| name.utf8_string == "main" {
-                return None;
+            lazy_static! {
+                static ref NO_BINARY_IN_NAMES_REGEX: Regex = Regex::new(
+                    r"^(_?|.*_)(and|or|AND|OR)([A-Z]|_).+|.+[a-z](And|Or)[A-Z].*$"
+                ).unwrap();
             }
 
-            if &descriptor.utf8_string[descriptor.utf8_string.len() - 1..] == "V" {
-                return Some(
-                    Fail::new(name.utf8_string.to_owned(),
-                        String::from("This method has return type of void"),
-                        GenericErrorKind::RuleCheckFailed
-                    )
-                );
+            match NO_BINARY_IN_NAMES_REGEX.is_match(name.utf8_string.as_str()) {
+                true => Some(Fail::new(
+                    name.utf8_string.to_owned(),
+                    String::from("This method's name contains and/or"),
+                    GenericErrorKind::RuleCheckFailed
+                )),
+                false => None,
             }
+        })
+    .collect();
 
-            None
-        }).collect();
-
-        return RuleResult::new(
-            String::from(file),
-            Rules::CheckNoVoid,
-            match errors.is_empty() {
-                true => Ok(()),
-                false => Err(errors)
-            }
-        );
+    RuleResult::new(
+        String::from(file),
+        Rules::NoBinaryInNames,
+        match errors.is_empty() {
+            true => Ok(()),
+            false => Err(errors)
+        }
+    )
 }
 
 /* -------------------------------------------------------------------------- */
@@ -97,8 +92,8 @@ mod tests {
 
     #[test]
     fn parse_ok() {
-        let inputs_valid = LinterInputs::new(INPUTS, Rules::CheckNoVoid, true);
-        let inputs_invalid = LinterInputs::new(INPUTS, Rules::CheckNoVoid, false);
+        let inputs_valid = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, true);
+        let inputs_invalid = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, false);
 
         assert!(!inputs_valid.0.is_empty());
         assert!(!inputs_invalid.0.is_empty());
@@ -112,18 +107,18 @@ mod tests {
     }
 
     #[test]
-    fn check_void_ok() {
-        let inputs = LinterInputs::new(INPUTS, Rules::CheckNoVoid, true);
+    fn no_binary_in_names_ok() {
+        let inputs = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, true);
         for (file, class_file) in inputs.0 {
-            assert!(check_void(class_file, file.as_str()).result().is_ok());
+            assert!(no_binary_in_names(class_file, file.as_str()).result().is_ok());
         }
     }
 
     #[test]
-    fn check_void_fail() {
-        let inputs = LinterInputs::new(INPUTS, Rules::CheckNoVoid, false);
+    fn no_binary_in_names_fail() {
+        let inputs = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, false);
         for (file, class_file) in inputs.0 {
-            assert!(!check_void(class_file, file.as_str()).result().is_ok());
+            assert!(!no_binary_in_names(class_file, file.as_str()).result().is_ok());
         }
     }
 }

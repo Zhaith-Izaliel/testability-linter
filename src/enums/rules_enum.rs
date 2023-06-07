@@ -2,14 +2,14 @@ use std::fmt;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Rules {
-    CheckNoVoid
+    NoBinaryInNames
 }
 
 impl Rules {
     #[cfg(test)]
     pub fn to_dir_string(&self) -> &str {
         match *self {
-            Rules::CheckNoVoid => "check_no_void"
+            Rules::NoBinaryInNames => "no_binary_in_names"
         }
     }
 }
@@ -17,7 +17,9 @@ impl Rules {
 impl fmt::Display for Rules {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Rules::CheckNoVoid => write!(f,"No Void Method Allowed"),
+            Rules::NoBinaryInNames =>
+                write!(f,"No \"And\" or \"Or\" in Method Names"),
         }
     }
 }
+
