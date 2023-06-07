@@ -1,8 +1,4 @@
-use classfile_parser::{
-    parse_class,
-    types::ClassFile,
-    constant_info::{ConstantInfo, Utf8Constant},
-};
+use classfile_parser::types::ClassFile;
 use crate::{
     errors::{
         generic::*, fail::Fail
@@ -11,16 +7,9 @@ use crate::{
     types::rule::*
 };
 
-use crate::utils::path::*;
+use super::utils::*;
 
 /* --------------------------------- Public --------------------------------- */
-
-pub fn parse_file(path: &String) -> Result<ClassFile, IError> {
-    match parse_class(parse_path_as_absolute(path)?.as_str()) {
-        Ok(class_file) => Ok(class_file),
-        Err(e) => Err(IError::new(GenericErrorKind::ParseError, e)),
-    }
-}
 
 pub fn check_void(class_file: ClassFile, file: &str) -> RuleResult {
     let const_pool = &class_file.const_pool;
@@ -48,7 +37,10 @@ pub fn check_void(class_file: ClassFile, file: &str) -> RuleResult {
 
             if &descriptor.utf8_string[descriptor.utf8_string.len() - 1..] == "V" {
                 return Some(
-                    Fail::new(name.utf8_string.to_owned(), String::from("This method has return type of void"), GenericErrorKind::RuleCheckFailed)
+                    Fail::new(name.utf8_string.to_owned(),
+                        String::from("This method has return type of void"),
+                        GenericErrorKind::RuleCheckFailed
+                    )
                 );
             }
 
@@ -65,18 +57,6 @@ pub fn check_void(class_file: ClassFile, file: &str) -> RuleResult {
         );
 }
 
-/* --------------------------------- Private -------------------------------- */
-
-fn extract_utf8_constant(constant_pool: &Vec<ConstantInfo>, index: u16) -> Result<&Utf8Constant, IError> {
-match constant_pool.get((index - 1) as usize) {
-        Some(constant) => match constant {
-            ConstantInfo::Utf8(constant) => Ok(constant),
-            _ => Err(IError::new(GenericErrorKind::InvalidFormat, String::from("Not an Utf8Constant."))),
-        },
-        None => return Err(IError::new(GenericErrorKind::NotFound, String::from("Index out of bound for constant pool."))),
-    }
-}
-
 /* -------------------------------------------------------------------------- */
 /*                                  Test Suit                                 */
 /* -------------------------------------------------------------------------- */
@@ -84,6 +64,7 @@ match constant_pool.get((index - 1) as usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::parse::parse_file;
     use std::{
         fs,
         path::Path,
@@ -146,3 +127,4 @@ mod tests {
         }
     }
 }
+
