@@ -52,6 +52,8 @@ pub fn no_binary_in_names(class_file: ClassFile, file: &str) -> RuleResult {
     )
 }
 
+pub fn too_many_arguments
+
 /* -------------------------------------------------------------------------- */
 /*                                  Test Suit                                 */
 /* -------------------------------------------------------------------------- */
