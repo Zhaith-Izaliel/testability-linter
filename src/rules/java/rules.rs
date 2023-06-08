@@ -52,7 +52,42 @@ pub fn no_binary_in_names(class_file: ClassFile, file: &str) -> RuleResult {
     )
 }
 
-pub fn too_many_arguments
+pub fn too_many_arguments(class_file: ClassFile, file: &str, max_arguments: u8)
+-> RuleResult {
+    let const_pool = &class_file.const_pool;
+
+    let errors: Vec<Fail> = class_file.methods
+        .iter()
+        .filter_map(|method| {
+            let name = match extract_utf8_constant(const_pool, method.name_index) {
+                Ok(name) => name,
+                Err(e) => return Some(
+                    Fail::new(String::from("N/A"), e.message().clone(), e.kind())
+                )
+            };
+
+            let descriptor = match extract_utf8_constant(const_pool, method.descriptor_index) {
+                Ok(descriptor) => descriptor,
+                Err(e) => return Some(
+                    Fail::new(name.utf8_string.to_owned(), e.message().clone(), e.kind())
+                )
+            };
+
+
+
+            None
+        })
+    .collect();
+
+    RuleResult::new(
+        String::from(file),
+        Rules::NoBinaryInNames,
+        match errors.is_empty() {
+            true => Ok(()),
+            false => Err(errors)
+        }
+    )
+}
 
 /* -------------------------------------------------------------------------- */
 /*                                  Test Suit                                 */
@@ -121,6 +156,24 @@ mod tests {
         let inputs = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, false);
         for (file, class_file) in inputs.0 {
             assert!(!no_binary_in_names(class_file, file.as_str()).result().is_ok());
+        }
+    }
+
+    #[test]
+    fn too_many_arguments_ok(#[case] max_arguments: u8, #[case] expected: boolean) {
+        let inputs = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, true);
+        for (file, class_file) in inputs.0 {
+            assert!(too_many_arguments(class_file, file.as_str(), max_arguments)
+                .result().is_ok() == expected);
+        }
+    }
+
+    #[test]
+    fn too_many_arguments_fail(#[case] max_arguments: u8, #[case] expected: boolean) {
+        let inputs = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, false);
+        for (file, class_file) in inputs.0 {
+            assert!(too_many_arguments(class_file, file.as_str(), max_arguments)
+                .result().is_ok() == expected);
         }
     }
 }
