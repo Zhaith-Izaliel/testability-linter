@@ -1,7 +1,7 @@
 use classfile_parser::ClassFile;
 
 use crate::rules::java::parse::parse_file;
-use crate::rules::java::rules::no_binary_in_names;
+use crate::rules::java::rules::*;
 
 pub fn lint_files(files: Vec<String>) {
     let class_files: Vec<(ClassFile, &String)> = files
@@ -16,7 +16,7 @@ pub fn lint_files(files: Vec<String>) {
         .collect();
 
     class_files.iter().for_each(|class_file| {
-        let result = no_binary_in_names(class_file.0.to_owned(), class_file.1);
+        let result = too_many_arguments(class_file.0.to_owned(), class_file.1, 10);
         println!("{}", result);
     });
 }

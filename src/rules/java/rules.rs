@@ -3,11 +3,9 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::{
-    errors::{
-        generic::*, fail::Fail
-    },
     enums::rules_enum::*,
-    types::rule::*
+    errors::{fail::Fail, generic::*},
+    types::rule::*,
 };
 
 use super::utils::*;
@@ -15,78 +13,91 @@ use super::utils::*;
 pub fn no_binary_in_names(class_file: ClassFile, file: &str) -> RuleResult {
     let const_pool = &class_file.const_pool;
 
-    let errors: Vec<Fail> = class_file.methods
+    let errors: Vec<Fail> = class_file
+        .methods
         .iter()
         .filter_map(|method| {
-            let name = match extract_utf8_constant(const_pool, method.name_index) {
+            let name = match extract_method_name(const_pool, method.name_index) {
                 Ok(name) => name,
-                Err(e) => return Some(
-                    Fail::new(String::from("N/A"), e.message().clone(), e.kind())
-                )
+                Err(e) => return Some(e),
             };
 
             lazy_static! {
-                static ref NO_BINARY_IN_NAMES_REGEX: Regex = Regex::new(
-                    r"^(_?|.*_)(and|or|AND|OR)([A-Z]|_).+|.+[a-z](And|Or)[A-Z].*$"
-                ).unwrap();
+                static ref NO_BINARY_IN_NAMES_REGEX: Regex =
+                    Regex::new(r"^(_?|.*_)(and|or|AND|OR)([A-Z]|_).+|.+[a-z](And|Or)[A-Z].*$")
+                        .unwrap();
             }
 
-            match NO_BINARY_IN_NAMES_REGEX.is_match(name.utf8_string.as_str()) {
+            match NO_BINARY_IN_NAMES_REGEX.is_match(name.as_str()) {
                 true => Some(Fail::new(
-                    name.utf8_string.to_owned(),
+                    name.to_owned(),
                     String::from("This method's name contains and/or"),
-                    GenericErrorKind::RuleCheckFailed
+                    GenericErrorKind::RuleCheckFailed,
                 )),
                 false => None,
             }
         })
-    .collect();
+        .collect();
 
     RuleResult::new(
         String::from(file),
         Rules::NoBinaryInNames,
         match errors.is_empty() {
             true => Ok(()),
-            false => Err(errors)
-        }
+            false => Err(errors),
+        },
     )
 }
 
-pub fn too_many_arguments(class_file: ClassFile, file: &str, max_arguments: u8)
--> RuleResult {
+pub fn too_many_arguments(class_file: ClassFile, file: &str, max_arguments: u8) -> RuleResult {
     let const_pool = &class_file.const_pool;
 
-    let errors: Vec<Fail> = class_file.methods
+    let errors: Vec<Fail> = class_file
+        .methods
         .iter()
         .filter_map(|method| {
-            let name = match extract_utf8_constant(const_pool, method.name_index) {
+            let name = match extract_method_name(const_pool, method.name_index) {
                 Ok(name) => name,
-                Err(e) => return Some(
-                    Fail::new(String::from("N/A"), e.message().clone(), e.kind())
-                )
+                Err(e) => return Some(e),
             };
 
-            let descriptor = match extract_utf8_constant(const_pool, method.descriptor_index) {
-                Ok(descriptor) => descriptor,
-                Err(e) => return Some(
-                    Fail::new(name.utf8_string.to_owned(), e.message().clone(), e.kind())
-                )
-            };
+            let descriptor =
+                match extract_method_descriptor(const_pool, method.descriptor_index, &name) {
+                    Ok(descriptor) => descriptor,
+                    Err(e) => return Some(e),
+                };
 
-
+            println!(
+                "method: {}, descriptor: {}, number of parameters: {}",
+                name,
+                descriptor,
+                count_parameters(descriptor)
+            );
 
             None
         })
-    .collect();
+        .collect();
 
     RuleResult::new(
         String::from(file),
-        Rules::NoBinaryInNames,
+        Rules::TooManyArguments,
         match errors.is_empty() {
             true => Ok(()),
-            false => Err(errors)
-        }
+            false => Err(errors),
+        },
     )
+}
+
+fn count_parameters(descriptor: &String) -> usize {
+    lazy_static! {
+        static ref MATCH_PARAMETERS: Regex =
+        Regex::new(r"L.[^;];|\(|\).*").unwrap();
+    }
+    let vector: Vec<&str> = MATCH_PARAMETERS
+        .split(descriptor)
+        .filter(|s| !s.is_empty()).collect();
+    println!("{:?}", vector);
+    vector.iter().count()
 }
 
 /* -------------------------------------------------------------------------- */
@@ -95,18 +106,16 @@ pub fn too_many_arguments(class_file: ClassFile, file: &str, max_arguments: u8)
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::parse::parse_file;
-    use std::{
-        fs,
-        path::Path,
-    };
+    use super::*;
+    use rstest::rstest;
+    use std::{fs, path::Path};
 
     struct LinterInputs(Vec<(String, ClassFile)>);
 
     impl LinterInputs {
         pub fn new(input: &str, rule: Rules, valid: bool) -> Self {
-            let valid_string = if valid {"valid"} else {"invalid"};
+            let valid_string = if valid { "valid" } else { "invalid" };
             let dir = format!("{}/{}/{}", input, rule.to_dir_string(), valid_string);
             Self(Self::get_input_files(&dir))
         }
@@ -114,14 +123,13 @@ mod tests {
         fn get_input_files(dir: &String) -> Vec<(String, ClassFile)> {
             let path = Path::new(dir);
             fs::read_dir(path)
-            .unwrap()
-            .map(
-                |x| {
+                .unwrap()
+                .map(|x| {
                     let file = String::from(x.unwrap().path().to_str().unwrap());
                     let class_file = parse_file(&file).unwrap();
                     (file, class_file)
-                }
-            ).collect()
+                })
+                .collect()
         }
     }
 
@@ -147,7 +155,9 @@ mod tests {
     fn no_binary_in_names_ok() {
         let inputs = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, true);
         for (file, class_file) in inputs.0 {
-            assert!(no_binary_in_names(class_file, file.as_str()).result().is_ok());
+            assert!(no_binary_in_names(class_file, file.as_str())
+                .result()
+                .is_ok());
         }
     }
 
@@ -155,25 +165,23 @@ mod tests {
     fn no_binary_in_names_fail() {
         let inputs = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, false);
         for (file, class_file) in inputs.0 {
-            assert!(!no_binary_in_names(class_file, file.as_str()).result().is_ok());
+            assert!(!no_binary_in_names(class_file, file.as_str())
+                .result()
+                .is_ok());
         }
     }
 
-    #[test]
-    fn too_many_arguments_ok(#[case] max_arguments: u8, #[case] expected: boolean) {
+    #[rstest]
+    #[case(0, false)]
+    fn too_many_arguments_test(#[case] max_arguments: u8, #[case] expected: bool) {
         let inputs = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, true);
         for (file, class_file) in inputs.0 {
-            assert!(too_many_arguments(class_file, file.as_str(), max_arguments)
-                .result().is_ok() == expected);
-        }
-    }
-
-    #[test]
-    fn too_many_arguments_fail(#[case] max_arguments: u8, #[case] expected: boolean) {
-        let inputs = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, false);
-        for (file, class_file) in inputs.0 {
-            assert!(too_many_arguments(class_file, file.as_str(), max_arguments)
-                .result().is_ok() == expected);
+            assert!(
+                too_many_arguments(class_file, file.as_str(), max_arguments)
+                    .result()
+                    .is_ok()
+                    == expected
+            );
         }
     }
 }
