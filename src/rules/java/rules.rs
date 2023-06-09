@@ -66,14 +66,12 @@ pub fn too_many_arguments(class_file: ClassFile, file: &str, max_arguments: u8) 
                     Ok(descriptor) => descriptor,
                     Err(e) => return Some(e),
                 };
-
-            println!(
-                "method: {}, descriptor: {}, number of parameters: {}",
-                name,
-                descriptor,
-                count_parameters(descriptor)
-            );
-
+            if count_parameters(descriptor) > max_arguments {
+                return Some(Fail::new(name.to_owned(),
+                    String::from(format!("This method has too many arguments (max: {})", max_arguments)),
+                    GenericErrorKind::RuleCheckFailed
+                ))
+            }
             None
         })
         .collect();
@@ -88,16 +86,14 @@ pub fn too_many_arguments(class_file: ClassFile, file: &str, max_arguments: u8) 
     )
 }
 
-fn count_parameters(descriptor: &String) -> usize {
+fn count_parameters(descriptor: &String) -> u8 {
     lazy_static! {
-        static ref MATCH_PARAMETERS: Regex =
-        Regex::new(r"L.[^;];|\(|\).*").unwrap();
+        static ref MATCH_PARAMETERS: Regex = Regex::new(r"L[^;]*|\(|\).*|").unwrap();
     }
-    let vector: Vec<&str> = MATCH_PARAMETERS
+    MATCH_PARAMETERS
         .split(descriptor)
-        .filter(|s| !s.is_empty()).collect();
-    println!("{:?}", vector);
-    vector.iter().count()
+        .filter(|s| !s.is_empty())
+        .count() as u8
 }
 
 /* -------------------------------------------------------------------------- */
@@ -117,6 +113,10 @@ mod tests {
         pub fn new(input: &str, rule: Rules, valid: bool) -> Self {
             let valid_string = if valid { "valid" } else { "invalid" };
             let dir = format!("{}/{}/{}", input, rule.to_dir_string(), valid_string);
+            Self(Self::get_input_files(&dir))
+        }
+        pub fn new_number(input: &str, rule: Rules) -> Self {
+            let dir = format!("{}/{}", input, rule.to_dir_string());
             Self(Self::get_input_files(&dir))
         }
 
@@ -173,16 +173,20 @@ mod tests {
 
     #[rstest]
     #[case(0, false)]
+    #[case(2, false)]
+    #[case(3, false)]
+    #[case(4, true)]
+    #[case(5, true)]
     fn too_many_arguments_test(#[case] max_arguments: u8, #[case] expected: bool) {
-        let inputs = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, true);
-        for (file, class_file) in inputs.0 {
+        let inputs = LinterInputs::new_number(INPUTS, Rules::TooManyArguments);
+        inputs.0.iter().for_each(|(file, class_file)| {
             assert!(
-                too_many_arguments(class_file, file.as_str(), max_arguments)
+                too_many_arguments(class_file.to_owned(), file.as_str(), max_arguments)
                     .result()
                     .is_ok()
                     == expected
             );
-        }
+        })
     }
 }
 
