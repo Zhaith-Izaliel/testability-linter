@@ -49,6 +49,51 @@ pub fn no_binary_in_names(class_file: ClassFile, file: &str) -> RuleResult {
     )
 }
 
+pub fn check_no_void(class_file: ClassFile, file: &str) -> RuleResult {
+    let const_pool = &class_file.const_pool;
+
+    let errors: Vec<Fail> = class_file
+        .methods
+        .iter()
+        .filter_map(|method| {
+            let name = match extract_method_name(const_pool, method.name_index) {
+                Ok(name) => name,
+                Err(e) => return Some(e),
+            };
+
+            let descriptor =
+                match extract_method_descriptor(const_pool, method.descriptor_index, &name) {
+                    Ok(descriptor) => descriptor,
+                    Err(e) => return Some(e),
+                };
+            lazy_static! {
+                static ref MATCH_CONSTRUCTORS_AND_MAIN: Regex =
+                    Regex::new(r".*<init>.*|.*<clinit>.*|main").unwrap();
+            }
+            if MATCH_CONSTRUCTORS_AND_MAIN.is_match(name) {
+                return None;
+            }
+
+            if &descriptor[descriptor.len() - 1..] == "V" {
+                return Some(Fail::new(
+                    name.to_owned(),
+                    String::from("This method has return type of void"),
+                    GenericErrorKind::RuleCheckFailed,
+                ));
+            }
+            None
+        })
+        .collect();
+    RuleResult::new(
+        String::from(file),
+        Rules::CheckNoVoid,
+        match errors.is_empty() {
+            true => Ok(()),
+            false => Err(errors)
+        }
+    )
+}
+
 pub fn too_many_arguments(class_file: ClassFile, file: &str, max_arguments: u8) -> RuleResult {
     let const_pool = &class_file.const_pool;
 
@@ -67,10 +112,14 @@ pub fn too_many_arguments(class_file: ClassFile, file: &str, max_arguments: u8) 
                     Err(e) => return Some(e),
                 };
             if count_parameters(descriptor) > max_arguments {
-                return Some(Fail::new(name.to_owned(),
-                    String::from(format!("This method has too many arguments (max: {})", max_arguments)),
-                    GenericErrorKind::RuleCheckFailed
-                ))
+                return Some(Fail::new(
+                    name.to_owned(),
+                    String::from(format!(
+                        "This method has too many arguments (max: {})",
+                        max_arguments
+                    )),
+                    GenericErrorKind::RuleCheckFailed,
+                ));
             }
             None
         })
@@ -134,6 +183,22 @@ mod tests {
     }
 
     const INPUTS: &str = "tests/inputs/java";
+
+    #[test]
+    fn check_no_void_ok() {
+        let inputs = LinterInputs::new(INPUTS, Rules::CheckNoVoid, true);
+        for (file, class_file) in inputs.0 {
+            assert!(check_no_void(class_file, file.as_str()).result().is_ok());
+        }
+    }
+
+    #[test]
+    fn check_no_void_fail() {
+        let inputs = LinterInputs::new(INPUTS, Rules::CheckNoVoid, false);
+        for (file, class_file) in inputs.0 {
+            assert!(!check_no_void(class_file, file.as_str()).result().is_ok());
+        }
+    }
 
     #[test]
     fn parse_ok() {
