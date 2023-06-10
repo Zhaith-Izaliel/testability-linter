@@ -66,10 +66,12 @@ pub fn check_no_void(class_file: ClassFile, file: &str) -> RuleResult {
                     Ok(descriptor) => descriptor,
                     Err(e) => return Some(e),
                 };
+
             lazy_static! {
                 static ref MATCH_CONSTRUCTORS_AND_MAIN: Regex =
                     Regex::new(r".*<init>.*|.*<clinit>.*|main").unwrap();
             }
+
             if MATCH_CONSTRUCTORS_AND_MAIN.is_match(name) {
                 return None;
             }
@@ -81,6 +83,7 @@ pub fn check_no_void(class_file: ClassFile, file: &str) -> RuleResult {
                     GenericErrorKind::RuleCheckFailed,
                 ));
             }
+
             None
         })
         .collect();

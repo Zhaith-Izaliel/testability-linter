@@ -10,6 +10,7 @@ classfile-parser = "~0.3"
 colored = "2.0.0"
 regex = "1.8.4"
 lazy_static = "1.4.0"
+toml = "0.7.4"
 
 [dev-dependencies]
 rstest = "0.17.0"
