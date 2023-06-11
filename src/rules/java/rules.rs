@@ -3,7 +3,6 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::{
-    enums::rules_enum::*,
     errors::{fail::Fail, generic::*},
     types::rule::*,
 };
@@ -41,7 +40,7 @@ pub fn no_binary_in_names(class_file: ClassFile, file: &str) -> RuleResult {
 
     RuleResult::new(
         String::from(file),
-        Rules::NoBinaryInNames,
+        RuleKind::NoBinaryInNames,
         match errors.is_empty() {
             true => Ok(()),
             false => Err(errors),
@@ -66,10 +65,12 @@ pub fn check_no_void(class_file: ClassFile, file: &str) -> RuleResult {
                     Ok(descriptor) => descriptor,
                     Err(e) => return Some(e),
                 };
+
             lazy_static! {
                 static ref MATCH_CONSTRUCTORS_AND_MAIN: Regex =
                     Regex::new(r".*<init>.*|.*<clinit>.*|main").unwrap();
             }
+
             if MATCH_CONSTRUCTORS_AND_MAIN.is_match(name) {
                 return None;
             }
@@ -81,12 +82,13 @@ pub fn check_no_void(class_file: ClassFile, file: &str) -> RuleResult {
                     GenericErrorKind::RuleCheckFailed,
                 ));
             }
+
             None
         })
         .collect();
     RuleResult::new(
         String::from(file),
-        Rules::CheckNoVoid,
+        RuleKind::CheckNoVoid,
         match errors.is_empty() {
             true => Ok(()),
             false => Err(errors)
@@ -127,7 +129,7 @@ pub fn too_many_arguments(class_file: ClassFile, file: &str, max_arguments: u8) 
 
     RuleResult::new(
         String::from(file),
-        Rules::TooManyArguments,
+        RuleKind::TooManyArguments,
         match errors.is_empty() {
             true => Ok(()),
             false => Err(errors),
@@ -159,13 +161,13 @@ mod tests {
     struct LinterInputs(Vec<(String, ClassFile)>);
 
     impl LinterInputs {
-        pub fn new(input: &str, rule: Rules, valid: bool) -> Self {
+        pub fn new(input: &str, rule: RuleKind, valid: bool) -> Self {
             let valid_string = if valid { "valid" } else { "invalid" };
-            let dir = format!("{}/{}/{}", input, rule.to_dir_string(), valid_string);
+            let dir = format!("{}/{}/{}", input, rule.to_key(), valid_string);
             Self(Self::get_input_files(&dir))
         }
-        pub fn new_number(input: &str, rule: Rules) -> Self {
-            let dir = format!("{}/{}", input, rule.to_dir_string());
+        pub fn new_number(input: &str, rule: RuleKind) -> Self {
+            let dir = format!("{}/{}", input, rule.to_key());
             Self(Self::get_input_files(&dir))
         }
 
@@ -186,7 +188,7 @@ mod tests {
 
     #[test]
     fn check_no_void_ok() {
-        let inputs = LinterInputs::new(INPUTS, Rules::CheckNoVoid, true);
+        let inputs = LinterInputs::new(INPUTS, RuleKind::CheckNoVoid, true);
         for (file, class_file) in inputs.0 {
             assert!(check_no_void(class_file, file.as_str()).result().is_ok());
         }
@@ -194,7 +196,7 @@ mod tests {
 
     #[test]
     fn check_no_void_fail() {
-        let inputs = LinterInputs::new(INPUTS, Rules::CheckNoVoid, false);
+        let inputs = LinterInputs::new(INPUTS, RuleKind::CheckNoVoid, false);
         for (file, class_file) in inputs.0 {
             assert!(!check_no_void(class_file, file.as_str()).result().is_ok());
         }
@@ -202,8 +204,8 @@ mod tests {
 
     #[test]
     fn parse_ok() {
-        let inputs_valid = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, true);
-        let inputs_invalid = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, false);
+        let inputs_valid = LinterInputs::new(INPUTS, RuleKind::NoBinaryInNames, true);
+        let inputs_invalid = LinterInputs::new(INPUTS, RuleKind::NoBinaryInNames, false);
 
         assert!(!inputs_valid.0.is_empty());
         assert!(!inputs_invalid.0.is_empty());
@@ -218,7 +220,7 @@ mod tests {
 
     #[test]
     fn no_binary_in_names_ok() {
-        let inputs = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, true);
+        let inputs = LinterInputs::new(INPUTS, RuleKind::NoBinaryInNames, true);
         for (file, class_file) in inputs.0 {
             assert!(no_binary_in_names(class_file, file.as_str())
                 .result()
@@ -228,7 +230,7 @@ mod tests {
 
     #[test]
     fn no_binary_in_names_fail() {
-        let inputs = LinterInputs::new(INPUTS, Rules::NoBinaryInNames, false);
+        let inputs = LinterInputs::new(INPUTS, RuleKind::NoBinaryInNames, false);
         for (file, class_file) in inputs.0 {
             assert!(!no_binary_in_names(class_file, file.as_str())
                 .result()
@@ -243,7 +245,7 @@ mod tests {
     #[case(4, true)]
     #[case(5, true)]
     fn too_many_arguments_test(#[case] max_arguments: u8, #[case] expected: bool) {
-        let inputs = LinterInputs::new_number(INPUTS, Rules::TooManyArguments);
+        let inputs = LinterInputs::new_number(INPUTS, RuleKind::TooManyArguments);
         inputs.0.iter().for_each(|(file, class_file)| {
             assert!(
                 too_many_arguments(class_file.to_owned(), file.as_str(), max_arguments)
