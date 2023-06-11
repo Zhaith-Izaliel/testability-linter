@@ -1,10 +1,12 @@
 use toml::Table;
-use std::{ path::Path, fs};
+use std::{ path::PathBuf, fs};
 use crate::errors::generic::GenericErrorKind;
 use crate::types::rule::{ RuleKind, Rule };
 
-pub fn read_config(config_file: &Path) -> Result<Table, GenericErrorKind> {
-    let Ok(content) = fs::read_to_string(config_file) else {
+pub fn read_config(config_file: String) -> Result<Table, GenericErrorKind> {
+    let path = PathBuf::from(config_file.as_str());
+
+    let Ok(content) = fs::read_to_string(path) else {
         return Err(GenericErrorKind::InvalidPath);
     };
 

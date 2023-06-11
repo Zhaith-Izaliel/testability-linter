@@ -37,7 +37,7 @@ impl fmt::Display for RuleKind {
         match self {
             RuleKind::NoBinaryInNames => write!(f, "No \"And\" or \"Or\" in Method Names"),
             RuleKind::TooManyArguments => write!(f, "Too Many Arguments"),
-            RuleKind::CheckNoVoid => write!(f, "This method has a Void return type"),
+            RuleKind::CheckNoVoid => write!(f, "No Void Return"),
         }
     }
 }
@@ -92,11 +92,11 @@ impl Rule {
         }
     }
 
-    pub fn run(&self, class_file: ClassFile, file: &str) -> RuleResult {
+    pub fn run(&self, class_file: &ClassFile, file: &str) -> RuleResult {
         match self.rule {
-            RuleKind::CheckNoVoid => check_no_void(class_file, file),
-            RuleKind::NoBinaryInNames => no_binary_in_names(class_file, file),
-            RuleKind::TooManyArguments => too_many_arguments(class_file, file, self.parameter),
+            RuleKind::CheckNoVoid => check_no_void(class_file.to_owned(), file),
+            RuleKind::NoBinaryInNames => no_binary_in_names(class_file.to_owned(), file),
+            RuleKind::TooManyArguments => too_many_arguments(class_file.to_owned(), file, self.parameter),
         }
     }
 }
