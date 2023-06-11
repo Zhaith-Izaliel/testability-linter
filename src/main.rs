@@ -1,7 +1,6 @@
 mod errors;
 mod types;
 mod rules;
-mod enums;
 mod utils;
 mod cli;
 mod config;
