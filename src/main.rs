@@ -20,7 +20,7 @@ fn main() {
 
     let rules = match create_rules_list(config_file) {
         Some(rules) => rules,
-        None => { eprintln!("You didn't select rules in the config file"); return () }
+        None => { eprintln!("You didn't select rules in the config file"); return (); }
     };
     rules.iter().for_each(|rule| {
         lint_files(args[2..].to_vec(), rule);

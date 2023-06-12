@@ -34,3 +34,35 @@ pub fn select_rules(table: Table) -> Option<Vec<Rule>> {
     Some(vector)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case::empty("", false)]
+    #[case::malformed("tests/inputs/config/invalid/malformed_file.toml", false)]
+    #[case::all_rules("tests/inputs/config/valid/all_rules.toml", true)]
+    #[case::all_and_other_rules("tests/inputs/config/valid/unnecessary_rules.toml", true)]
+    #[case::some_rules("tests/inputs/config/valid/some_rules.toml", true)]
+    #[case::some_and_other_rules("tests/inputs/config/valid/some_unnecessary_rules.toml", true)]
+    fn test_read_config(#[case] file: &str, #[case] expected: bool) {
+        let result = read_config(String::from(file));
+        assert_eq!(result.is_ok(), expected);
+    }
+
+    #[rstest]
+    #[case::all_rules("tests/inputs/config/valid/all_rules.toml", 3)]
+    #[case::all_and_other_rules("tests/inputs/config/valid/unnecessary_rules.toml", 3)]
+    #[case::some_rules("tests/inputs/config/valid/some_rules.toml", 1)]
+    #[case::some_and_other_rules("tests/inputs/config/valid/some_unnecessary_rules.toml", 2)]
+    fn test_select_rules(#[case] file: &str, #[case] expected: usize) {
+        let table = read_config(String::from(file)).unwrap();
+        let option_vec = select_rules(table);
+        match option_vec {
+            None => assert_eq!(0, expected),
+            Some(vec) => assert_eq!(vec.len(), expected)
+        }
+    }
+}
+

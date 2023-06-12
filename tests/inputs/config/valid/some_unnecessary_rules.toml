@@ -1,0 +1,8 @@
+check_no_void = true
+too_many_arguments = 10
+aaah = true
+
+
+[Namespace]
+test = true
+
