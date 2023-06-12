@@ -143,12 +143,12 @@ impl fmt::Display for RuleResult {
         match self.result() {
             Ok(()) => {
                 let ok = format!("{}", "[OK]".green().bold());
-                write!(f, "{} {}, Rules: {}", ok, file, rule)
+                write!(f, "{} {}, Rule: {}", ok, file, rule)
             }
             Err(fails) => {
                 let ok = format!("{}", "[FAIL]".red().bold());
                 fails.iter().fold(Ok(()), |result, fail| {
-                    result.and_then(|_| writeln!(f, "{} {}, Rules: {}, {}", ok, file, rule, fail))
+                    result.and_then(|_| writeln!(f, "{} {}, Rule: {}, {}", ok, file, rule, fail))
                 })
             }
         }
