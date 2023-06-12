@@ -6,7 +6,7 @@ use std::fmt;
 use std::slice::Iter;
 use toml::{Table, Value};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RuleKind {
     NoBinaryInNames,
     TooManyArguments,
@@ -42,9 +42,9 @@ impl fmt::Display for RuleKind {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Rule {
-    rule: RuleKind,
+    kind: RuleKind,
     parameter: u8,
 }
 
@@ -62,6 +62,16 @@ impl Rule {
         }
     }
 
+    #[cfg(test)]
+    pub fn kind(self) -> RuleKind {
+        self.kind
+    }
+
+    #[cfg(test)]
+    pub fn parameter(self) -> u8 {
+        self.parameter
+    }
+
     fn select_rule(value: Option<&Value>, kind: RuleKind) -> Option<Self> {
         let Some(value) = value else {
             return None;
@@ -71,7 +81,7 @@ impl Rule {
             Value::Boolean(flag) => {
                 if *flag {
                     Some(Self {
-                        rule: kind,
+                        kind,
                         parameter: 0,
                     })
                 } else {
@@ -81,7 +91,7 @@ impl Rule {
             Value::Integer(int) => {
                 if *int > 0 {
                     Some(Self {
-                        rule: kind,
+                        kind,
                         parameter: *int as u8,
                     })
                 } else {
@@ -93,7 +103,7 @@ impl Rule {
     }
 
     pub fn run(&self, class_file: &ClassFile, file: &str) -> RuleResult {
-        match self.rule {
+        match self.kind {
             RuleKind::CheckNoVoid => check_no_void(class_file.to_owned(), file),
             RuleKind::NoBinaryInNames => no_binary_in_names(class_file.to_owned(), file),
             RuleKind::TooManyArguments => too_many_arguments(class_file.to_owned(), file, self.parameter),
@@ -141,6 +151,41 @@ impl fmt::Display for RuleResult {
                     result.and_then(|_| writeln!(f, "{} {}, Rules: {}, {}", ok, file, rule, fail))
                 })
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+    use toml::Table;
+
+    #[test]
+    fn test_rule_kind_iter() {
+        static RULE_KIND: [RuleKind; 3] = [
+            RuleKind::NoBinaryInNames,
+            RuleKind::TooManyArguments,
+            RuleKind::CheckNoVoid,
+        ];
+        let expected = RULE_KIND.iter();
+        assert_eq!(RuleKind::iterator().eq(expected), true);
+    }
+
+    #[rstest]
+    #[case::check_no_void("check_no_void = true", "check_no_void", 0)]
+    #[case::no_binary_in_names("no_binary_in_names = true", "no_binary_in_names", 0)]
+    #[case::too_many_arguments("too_many_arguments = 4", "too_many_arguments", 4)]
+    #[case::no_rule("no_rule = true", "no_rule", 0)]
+    fn test_new_rule(#[case] toml: &str, #[case] key: &str, #[case] parameter: u8) {
+        let table = toml.parse::<Table>().unwrap();
+        let rule = Rule::new(&table, key);
+        match rule {
+            Some(rule) => {
+                assert!(RuleKind::iterator().any(|item| item.eq(&rule.kind())));
+                assert_eq!(rule.parameter(), parameter);
+            },
+            None => assert!(!RuleKind::iterator().any(|item| key == item.to_key())),
         }
     }
 }

@@ -69,6 +69,7 @@
           pkgs.rust-analyzer
           cargo2nixBin
           pkgs.jdk
+          pkgs.cargo-tarpaulin
         ];
         # shellHook = ''
         #   echo "In shell"
@@ -88,3 +89,4 @@
     }
   );
 }
+

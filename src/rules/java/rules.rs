@@ -91,8 +91,8 @@ pub fn check_no_void(class_file: ClassFile, file: &str) -> RuleResult {
         RuleKind::CheckNoVoid,
         match errors.is_empty() {
             true => Ok(()),
-            false => Err(errors)
-        }
+            false => Err(errors),
+        },
     )
 }
 
@@ -156,104 +156,102 @@ mod tests {
     use super::super::parse::parse_file;
     use super::*;
     use rstest::rstest;
-    use std::{fs, path::Path};
-
-    struct LinterInputs(Vec<(String, ClassFile)>);
-
-    impl LinterInputs {
-        pub fn new(input: &str, rule: RuleKind, valid: bool) -> Self {
-            let valid_string = if valid { "valid" } else { "invalid" };
-            let dir = format!("{}/{}/{}", input, rule.to_key(), valid_string);
-            Self(Self::get_input_files(&dir))
-        }
-        pub fn new_number(input: &str, rule: RuleKind) -> Self {
-            let dir = format!("{}/{}", input, rule.to_key());
-            Self(Self::get_input_files(&dir))
-        }
-
-        fn get_input_files(dir: &String) -> Vec<(String, ClassFile)> {
-            let path = Path::new(dir);
-            fs::read_dir(path)
-                .unwrap()
-                .map(|x| {
-                    let file = String::from(x.unwrap().path().to_str().unwrap());
-                    let class_file = parse_file(&file).unwrap();
-                    (file, class_file)
-                })
-                .collect()
-        }
-    }
 
     const INPUTS: &str = "tests/inputs/java";
 
-    #[test]
-    fn check_no_void_ok() {
-        let inputs = LinterInputs::new(INPUTS, RuleKind::CheckNoVoid, true);
-        for (file, class_file) in inputs.0 {
-            assert!(check_no_void(class_file, file.as_str()).result().is_ok());
-        }
+    fn parse_file_for_test(file: &str) -> (ClassFile, String) {
+        let file = format!("{}/{}", INPUTS, file);
+        (parse_file(&file).unwrap(), String::from(file).to_owned() )
     }
 
-    #[test]
-    fn check_no_void_fail() {
-        let inputs = LinterInputs::new(INPUTS, RuleKind::CheckNoVoid, false);
-        for (file, class_file) in inputs.0 {
-            assert!(!check_no_void(class_file, file.as_str()).result().is_ok());
-        }
+    #[rstest]
+    #[case::one_void("check_no_void/invalid/VoidMethod.class", false)]
+    #[case::two_void("check_no_void/invalid/TwoVoidMethod.class", false)]
+    #[case::three_void("check_no_void/invalid/ThreeVoidMethod.class", false)]
+    #[case::four_void("check_no_void/invalid/FourVoidMethod.class", false)]
+    #[case::five_void("check_no_void/invalid/FiveVoidMethod.class", false)]
+    #[case::zero_void("check_no_void/valid/NoVoidMethod.class", true)]
+    #[case::main_method("check_no_void/valid/MainMethod.class", true)]
+    #[case::constructor("check_no_void/valid/ConstructorMethod.class", true)]
+    fn test_check_no_void(#[case] file: &str, #[case] expected: bool) {
+        let class_and_file = parse_file_for_test(file);
+        let result = check_no_void(class_and_file.0, class_and_file.1.as_str());
+        assert_eq!(result.result().is_ok(), expected);
     }
 
-    #[test]
-    fn parse_ok() {
-        let inputs_valid = LinterInputs::new(INPUTS, RuleKind::NoBinaryInNames, true);
-        let inputs_invalid = LinterInputs::new(INPUTS, RuleKind::NoBinaryInNames, false);
-
-        assert!(!inputs_valid.0.is_empty());
-        assert!(!inputs_invalid.0.is_empty());
-    }
-
-    #[test]
-    #[should_panic]
-    fn parse_fail() {
-        let faulty_file = String::from("");
-        parse_file(&faulty_file).unwrap();
-    }
-
-    #[test]
-    fn no_binary_in_names_ok() {
-        let inputs = LinterInputs::new(INPUTS, RuleKind::NoBinaryInNames, true);
-        for (file, class_file) in inputs.0 {
-            assert!(no_binary_in_names(class_file, file.as_str())
-                .result()
-                .is_ok());
-        }
-    }
-
-    #[test]
-    fn no_binary_in_names_fail() {
-        let inputs = LinterInputs::new(INPUTS, RuleKind::NoBinaryInNames, false);
-        for (file, class_file) in inputs.0 {
-            assert!(!no_binary_in_names(class_file, file.as_str())
-                .result()
-                .is_ok());
+    #[rstest]
+    #[case::one_void("check_no_void/invalid/VoidMethod.class", 1)]
+    #[case::two_void("check_no_void/invalid/TwoVoidMethod.class", 2)]
+    #[case::three_void("check_no_void/invalid/ThreeVoidMethod.class", 3)]
+    #[case::four_void("check_no_void/invalid/FourVoidMethod.class", 4)]
+    #[case::five_void("check_no_void/invalid/FiveVoidMethod.class", 5)]
+    #[case::zero_void("check_no_void/valid/NoVoidMethod.class", 0)]
+    #[case::main_method("check_no_void/valid/MainMethod.class", 0)]
+    #[case::constructor("check_no_void/valid/ConstructorMethod.class", 0)]
+    fn test_check_no_void_number(#[case] file: &str, #[case] expected: usize) {
+        let class_and_file = parse_file_for_test(file);
+        let result = check_no_void(class_and_file.0, class_and_file.1.as_str());
+        match result.result() {
+            Ok(_) => assert_eq!(0, expected),
+            Err(vector) => assert_eq!(vector.len(), expected)
         }
     }
 
     #[rstest]
+    #[case::invalid_and_camel("no_binary_in_names/invalid/AndInNameCamelCase.class", false)]
+    #[case::invalid_or_camel("no_binary_in_names/invalid/OrInNameCamelCase.class", false)]
+    #[case::invalid_and_camel_start("no_binary_in_names/invalid/AndInNameCamelCaseStart.class", false)]
+    #[case::invalid_or_camel_start("no_binary_in_names/invalid/OrInNameCamelCaseStart.class", false)]
+    #[case::invalid_and_snake("no_binary_in_names/invalid/AndInNameSnakeCase.class", false)]
+    #[case::invalid_or_snake("no_binary_in_names/invalid/OrInNameSnakeCase.class", false)]
+    #[case::invalid_and_snake_upper("no_binary_in_names/invalid/AndInNameSnakeCaseUpper.class", false)]
+    #[case::invalid_or_snake_upper("no_binary_in_names/invalid/OrInNameSnakeCaseUpper.class", false)]
+    #[case::invalid_and_snake_upper_start("no_binary_in_names/invalid/AndInNameSnakeCaseUpperStart.class", false)]
+    #[case::invalid_or_snake_upper_start("no_binary_in_names/invalid/AndInNameSnakeCaseUpperStart.class", false)]
+    #[case::valid_lower_and("no_binary_in_names/valid/LowerAndNameOnly.class", true)]
+    #[case::valid_lower_or("no_binary_in_names/valid/LowerOrNameOnly.class", true)]
+    #[case::valid_upper_and("no_binary_in_names/valid/UpperAndNameOnly.class", true)]
+    #[case::valid_upper_or("no_binary_in_names/valid/UpperOrNameOnly.class", true)]
+    #[case::valid_camel_and("no_binary_in_names/valid/CamelAndNameOnly.class", true)]
+    #[case::valid_camel_or("no_binary_in_names/valid/CamelOrNameOnly.class", true)]
+    fn test_no_binary_in_names(#[case] file: &str, #[case] expected: bool) {
+        let class_and_file = parse_file_for_test(file);
+        let result = no_binary_in_names(class_and_file.0, class_and_file.1.as_str());
+        assert_eq!(result.result().is_ok(), expected);
+    }
+
+    #[rstest]
     #[case(0, false)]
+    #[case(1, false)]
     #[case(2, false)]
     #[case(3, false)]
     #[case(4, true)]
     #[case(5, true)]
-    fn too_many_arguments_test(#[case] max_arguments: u8, #[case] expected: bool) {
-        let inputs = LinterInputs::new_number(INPUTS, RuleKind::TooManyArguments);
-        inputs.0.iter().for_each(|(file, class_file)| {
-            assert!(
-                too_many_arguments(class_file.to_owned(), file.as_str(), max_arguments)
-                    .result()
-                    .is_ok()
-                    == expected
-            );
-        })
+    #[case(6, true)]
+    #[case(7, true)]
+    #[case(8, true)]
+    #[case(9, true)]
+    #[case(10, true)]
+    fn test_too_many_arguments(#[case] max_arguments: u8, #[case] expected: bool) {
+        let class_and_file = parse_file_for_test("too_many_arguments/TooManyArguments.class");
+        let result = too_many_arguments(class_and_file.0, class_and_file.1.as_str(), max_arguments);
+        assert_eq!(result.result().is_ok(), expected);
+    }
+
+    #[rstest]
+    #[case::zero_argument(0, 5)]
+    #[case::one_argument(1, 4)]
+    #[case::two_arguments(2, 3)]
+    #[case::three_arguments(3, 2)]
+    #[case::four_arguments(4, 1)]
+    #[case::five_arguments(5, 0)]
+    fn test_too_many_arguments_number(#[case] max_arguments: u8, #[case] expected_errors: usize) {
+        let class_and_file = parse_file_for_test("too_many_arguments/TooManyArgumentsNumber.class");
+        let result = too_many_arguments(class_and_file.0, class_and_file.1.as_str(), max_arguments);
+        match result.result()  {
+            Ok(_) => assert_eq!(0, expected_errors),
+            Err(vector) => assert_eq!(vector.len(), expected_errors),
+        }
     }
 }
 
