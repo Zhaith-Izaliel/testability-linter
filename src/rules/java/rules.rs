@@ -165,12 +165,36 @@ mod tests {
     }
 
     #[rstest]
-    #[case("check_no_void/invalid/Example.class", false)]
-    #[case("check_no_void/valid/Test.class", true)]
+    #[case::one_void("check_no_void/invalid/VoidMethod.class", false)]
+    #[case::two_void("check_no_void/invalid/TwoVoidMethod.class", false)]
+    #[case::three_void("check_no_void/invalid/ThreeVoidMethod.class", false)]
+    #[case::four_void("check_no_void/invalid/FourVoidMethod.class", false)]
+    #[case::five_void("check_no_void/invalid/FiveVoidMethod.class", false)]
+    #[case::zero_void("check_no_void/valid/NoVoidMethod.class", true)]
+    #[case::main_method("check_no_void/valid/MainMethod.class", true)]
+    #[case::constructor("check_no_void/valid/ConstructorMethod.class", true)]
     fn test_check_no_void(#[case] file: &str, #[case] expected: bool) {
         let class_and_file = parse_file_for_test(file);
         let result = check_no_void(class_and_file.0, class_and_file.1.as_str());
         assert_eq!(result.result().is_ok(), expected);
+    }
+
+    #[rstest]
+    #[case::one_void("check_no_void/invalid/VoidMethod.class", 1)]
+    #[case::two_void("check_no_void/invalid/TwoVoidMethod.class", 2)]
+    #[case::three_void("check_no_void/invalid/ThreeVoidMethod.class", 3)]
+    #[case::four_void("check_no_void/invalid/FourVoidMethod.class", 4)]
+    #[case::five_void("check_no_void/invalid/FiveVoidMethod.class", 5)]
+    #[case::zero_void("check_no_void/valid/NoVoidMethod.class", 0)]
+    #[case::main_method("check_no_void/valid/MainMethod.class", 0)]
+    #[case::constructor("check_no_void/valid/ConstructorMethod.class", 0)]
+    fn test_check_no_void_number(#[case] file: &str, #[case] expected: usize) {
+        let class_and_file = parse_file_for_test(file);
+        let result = check_no_void(class_and_file.0, class_and_file.1.as_str());
+        match result.result() {
+            Ok(_) => assert_eq!(0, expected),
+            Err(vector) => assert_eq!(vector.len(), expected)
+        }
     }
 
     #[rstest]
