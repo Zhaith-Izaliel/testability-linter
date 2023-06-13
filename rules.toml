@@ -1,4 +1,4 @@
 check_no_void = true
 no_binary_in_names = true
-too_many_arguments = 5
+too_many_arguments = 4
 
