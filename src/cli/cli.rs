@@ -16,6 +16,10 @@ pub fn lint_files(files: Vec<String>, rule: &Rule) -> i32 {
         })
         .collect();
 
+    if class_files.is_empty() {
+        return 1;
+    }
+
     let mut code = 0;
 
     class_files.iter().for_each(|class_file| {
