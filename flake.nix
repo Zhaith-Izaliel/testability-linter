@@ -1,5 +1,6 @@
 {
   inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
     cargo2nix.url = "github:cargo2nix/cargo2nix/release-0.11.0";
     flake-utils.follows = "cargo2nix/flake-utils";
     nixpkgs.follows = "cargo2nix/nixpkgs";
@@ -66,7 +67,8 @@
       workspaceShell = (rustPkgs.workspaceShell {
         packages = [
           pkgs.rustup
-          pkgs.rust-analyzer
+          # pkgs.rust-analyzer
+          pkgs.cargo
           cargo2nixBin
           pkgs.jdk
           pkgs.cargo-tarpaulin
