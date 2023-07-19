@@ -62,14 +62,11 @@
         packageFun = import ./Cargo.nix;
       };
 
-      cargo2nixBin = cargo2nix.packages."${system}".cargo2nix;
-
       workspaceShell = (rustPkgs.workspaceShell {
         packages = [
           pkgs.rustup
-          # pkgs.rust-analyzer
-          pkgs.cargo
-          cargo2nixBin
+          pkgs.rust-analyzer
+          pkgs.cargo2nix
           pkgs.jdk
           pkgs.cargo-tarpaulin
         ];
