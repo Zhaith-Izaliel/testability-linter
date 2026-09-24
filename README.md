@@ -89,8 +89,8 @@ Testability Linter is made using Rust and can be compiled directly from source.
 ### Prerequisites
 
 Testability Linter requires the Rust Compiler if you plan to compile it, you will also need Cargo to build the project.
-* `rustc` >= 1.86.0
-* `cargo` >= 1.86.0
+* `rustc` >= 1.77.2
+* `cargo` >= 1.77.2
 
 ### Installation
 
