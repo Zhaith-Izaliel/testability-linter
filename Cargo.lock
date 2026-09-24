@@ -468,7 +468,7 @@ dependencies = [
 
 [[package]]
 name = "testability-linter"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "classfile-parser",
  "colored",
