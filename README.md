@@ -153,7 +153,7 @@ Any rules here can be omitted if need be.
 <!-- LICENSE -->
 ## License
 
-Distributed under the GPLv3 License. See [`LICENSE.md`](./LICENSE.md) for more information.
+Distributed under the GPLv3 License. See [`LICENSE`][license-url] for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -179,7 +179,7 @@ Distributed under the GPLv3 License. See [`LICENSE.md`](./LICENSE.md) for more i
 [issues-url]: https://github.com/Zhaith-Izaliel/testability-linter/issues
 [license-shield]: https://img.shields.io/github/license/Zhaith-Izaliel/testability-linter.svg?style=for-the-badge
 [license-url]: https://github.com/Zhaith-Izaliel/testability-linter/blob/master/LICENSE
-[report]: https://github.com/Zhaith-Izaliel/testability-linter/blob/master/LICENSE
+[report]: https://github.com/Zhaith-Izaliel/testability-linter/blob/master/Automating%20the%20Verification%20of%20Software_Testability_of_Software_Artifacts.pdf
 
 [product-screenshot]: images/screenshot.png
 [Rust]: https://img.shields.io/badge/Rust-B7400F?style=for-the-badge&logo=rust&logoColor=white
